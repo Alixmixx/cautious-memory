@@ -1,5 +1,8 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import type { User } from '@supabase/supabase-js';
 import { AppService } from './app.service';
+import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
+import { CurrentUser } from './auth/user.decorator';
 
 @Controller()
 export class AppController {
@@ -13,5 +16,11 @@ export class AppController {
   @Post('test')
   testAction(): { message: string; timestamp: string } {
     return this.appService.testAction();
+  }
+
+  @Post('protected')
+  @UseGuards(SupabaseAuthGuard)
+  protectedAction(@CurrentUser() user: User): { message: string; user: any; timestamp: string } {
+    return this.appService.protectedAction(user);
   }
 }
