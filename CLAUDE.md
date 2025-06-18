@@ -1,0 +1,1 @@
+If using the docs mcp server, do not query more than twice and keep the query short

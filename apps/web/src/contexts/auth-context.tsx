@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { AuthContextType, AuthState } from '@repo/database-types'
-import { createClient } from '@/utils/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
