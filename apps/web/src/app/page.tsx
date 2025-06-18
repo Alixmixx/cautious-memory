@@ -61,7 +61,7 @@ export default function Web() {
           {user ? (
             <>
               <span style={{ marginRight: "15px" }}>Welcome, {user.email}</span>
-              <Button onClick={() => router.push('/dashboard')} style={{ marginRight: "10px" }}>
+              <Button onClick={() => router.push('/app')} style={{ marginRight: "10px" }}>
                 Dashboard
               </Button>
             </>
