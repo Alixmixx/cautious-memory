@@ -1,8 +1,11 @@
 import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type FileError, type FileRejection, useDropzone } from 'react-dropzone'
+import { Database } from '@repo/database-types'
 
 const supabase = createClient()
+
+type ProjectFile = Database['public']['Tables']['project_files']['Insert']
 
 interface FileWithPreview extends File {
   preview?: string
@@ -126,17 +129,39 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
     const responses = await Promise.all(
       filesToUpload.map(async (file) => {
-        const { error } = await supabase.storage
+        const filePath = !!path ? `${path}/${file.name}` : file.name
+        
+        // Upload file to storage
+        const { error: uploadError } = await supabase.storage
           .from(bucketName)
-          .upload(!!path ? `${path}/${file.name}` : file.name, file, {
+          .upload(filePath, file, {
             cacheControl: cacheControl.toString(),
             upsert,
           })
-        if (error) {
-          return { name: file.name, message: error.message }
-        } else {
-          return { name: file.name, message: undefined }
+        
+        if (uploadError) {
+          return { name: file.name, message: uploadError.message }
         }
+
+        // Save file metadata to project_files table if path (project_id) is provided
+        if (path) {
+          const { error: dbError } = await supabase
+            .from('project_files')
+            .insert({
+              project_id: path,
+              file_name: file.name,
+              file_path: filePath,
+              file_size: file.size,
+              mime_type: file.type,
+            })
+
+          if (dbError) {
+            console.error('Failed to save file metadata:', dbError)
+            // Don't fail the upload if metadata save fails, just log it
+          }
+        }
+
+        return { name: file.name, message: undefined }
       })
     )
 
@@ -151,7 +176,7 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
     setSuccesses(newSuccesses)
 
     setLoading(false)
-  }, [files, path, bucketName, errors, successes])
+  }, [files, path, bucketName, errors, successes, cacheControl, upsert])
 
   useEffect(() => {
     if (files.length === 0) {
