@@ -8,7 +8,9 @@
     "dev": "turbo run dev",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "db:generate-types": "./scripts/generate-types.sh",
+    "db:migrate": "npx supabase migration up"
   },
   "dependencies": {},
   "devDependencies": {
