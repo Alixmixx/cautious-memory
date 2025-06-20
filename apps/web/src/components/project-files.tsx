@@ -235,27 +235,6 @@ export function ProjectFiles() {
 
   return (
     <div className="space-y-6">
-      {/* File Upload Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Upload Files to {selectedProject.name}
-          </CardTitle>
-          <CardDescription>
-            Upload files to organize them within your project
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Dropzone {...uploadProps}>
-            <DropzoneEmptyState />
-            <DropzoneContent />
-          </Dropzone>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
       {/* Files List Section */}
       <Card>
         <CardHeader>
@@ -277,7 +256,7 @@ export function ProjectFiles() {
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No files uploaded yet</p>
-              <p className="text-sm mt-2">Upload your first file using the form above</p>
+              <p className="text-sm mt-2">Upload your first file using the form below</p>
             </div>
           ) : (
             <Table>
@@ -287,6 +266,7 @@ export function ProjectFiles() {
                   <TableHead className="w-[100px]">Type</TableHead>
                   <TableHead className="w-[100px]">Size</TableHead>
                   <TableHead className="w-[150px]">Uploaded</TableHead>
+                  <TableHead className="w-[320px]">Actions</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -311,6 +291,43 @@ export function ProjectFiles() {
                       {formatDate(file.uploaded_at)}
                     </TableCell>
                     <TableCell>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <EditFileTextDialog file={file} onUpdate={fetchFiles}>
+                          <Button variant="outline" size="sm" className="h-8 text-xs">
+                            <Edit className="mr-1 h-3 w-3" />
+                            Edit Text
+                          </Button>
+                        </EditFileTextDialog>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs"
+                          onClick={() => handleGenerateScene(file)}
+                        >
+                          <Wand2 className="mr-1 h-3 w-3" />
+                          Scene
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs"
+                          onClick={() => handleEditScene(file)}
+                        >
+                          <Sparkles className="mr-1 h-3 w-3" />
+                          Edit
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs"
+                          onClick={() => handleGenerateImages(file)}
+                        >
+                          <ImageIcon className="mr-1 h-3 w-3" />
+                          Images
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -321,25 +338,6 @@ export function ProjectFiles() {
                           <DropdownMenuItem onClick={() => handleDownload(file)}>
                             <Download className="mr-2 h-4 w-4" />
                             Download
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <EditFileTextDialog file={file} onUpdate={fetchFiles}>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit Text
-                            </DropdownMenuItem>
-                          </EditFileTextDialog>
-                          <DropdownMenuItem onClick={() => handleGenerateScene(file)}>
-                            <Wand2 className="mr-2 h-4 w-4" />
-                            Generate Scene
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditScene(file)}>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Edit Scene
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleGenerateImages(file)}>
-                            <ImageIcon className="mr-2 h-4 w-4" />
-                            Generate Images
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
@@ -357,6 +355,27 @@ export function ProjectFiles() {
               </TableBody>
             </Table>
           )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* File Upload Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Upload Files to {selectedProject.name}
+          </CardTitle>
+          <CardDescription>
+            Upload files to organize them within your project
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Dropzone {...uploadProps}>
+            <DropzoneEmptyState />
+            <DropzoneContent />
+          </Dropzone>
         </CardContent>
       </Card>
     </div>
