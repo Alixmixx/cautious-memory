@@ -3,10 +3,35 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
-import { Database } from '@repo/database-types'
 
-type Project = Database['public']['Tables']['projects']['Row']
-type ProjectInsert = Database['public']['Tables']['projects']['Insert']
+interface Project {
+  id: string
+  name: string
+  description?: string | null
+  user_id: string
+  llm_model?: string | null
+  default_prompt?: string | null
+  tool_schema?: object | null
+  created_at: string
+  updated_at: string
+}
+
+interface ProjectInsert {
+  name: string
+  description?: string | null
+  user_id?: string
+  llm_model?: string | null
+  default_prompt?: string | null
+  tool_schema?: object | null
+}
+
+interface ProjectUpdate {
+  name?: string
+  description?: string | null
+  llm_model?: string | null
+  default_prompt?: string | null
+  tool_schema?: object | null
+}
 
 interface ProjectContextType {
   projects: Project[]
@@ -15,6 +40,8 @@ interface ProjectContextType {
   error: string | null
   selectProject: (project: Project) => void
   createProject: (project: Omit<ProjectInsert, 'user_id'>) => Promise<Project>
+  updateProject: (projectId: string, updates: Omit<ProjectUpdate, 'user_id' | 'id'>) => Promise<Project>
+  deleteProject: (projectId: string) => Promise<void>
   refreshProjects: () => Promise<void>
 }
 
@@ -84,6 +111,57 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return newProject
   }
 
+  const updateProject = async (projectId: string, updates: Omit<ProjectUpdate, 'user_id' | 'id'>): Promise<Project> => {
+    if (!user) throw new Error('User not authenticated')
+
+    setError(null)
+
+    const { data, error } = await supabase
+      .from('projects')
+      .update(updates)
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (error) throw error
+
+    const updatedProject = data as Project
+    
+    // Update projects list
+    setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p))
+    
+    // Update selected project if it's the one being updated
+    if (selectedProject?.id === projectId) {
+      setSelectedProject(updatedProject)
+    }
+    
+    return updatedProject
+  }
+
+  const deleteProject = async (projectId: string): Promise<void> => {
+    if (!user) throw new Error('User not authenticated')
+
+    setError(null)
+
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+
+    if (error) throw error
+
+    // Remove from projects list
+    setProjects(prev => prev.filter(p => p.id !== projectId))
+    
+    // If the deleted project was selected, select another one or null
+    if (selectedProject?.id === projectId) {
+      const remainingProjects = projects.filter(p => p.id !== projectId)
+      setSelectedProject(remainingProjects.length > 0 ? remainingProjects[0] : null)
+    }
+  }
+
   useEffect(() => {
     if (user) {
       refreshProjects()
@@ -102,6 +180,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         error,
         selectProject,
         createProject,
+        updateProject,
+        deleteProject,
         refreshProjects,
       }}
     >

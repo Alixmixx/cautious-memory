@@ -1,11 +1,17 @@
 import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type FileError, type FileRejection, useDropzone } from 'react-dropzone'
-import { Database } from '@repo/database-types'
 
 const supabase = createClient()
 
-type ProjectFile = Database['public']['Tables']['project_files']['Insert']
+interface ProjectFile {
+  project_id: string
+  file_name: string
+  file_path: string
+  file_size: number
+  mime_type: string
+  text_content?: string | null
+}
 
 interface FileWithPreview extends File {
   preview?: string

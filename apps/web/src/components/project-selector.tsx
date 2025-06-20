@@ -7,10 +7,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useProject } from '@/contexts/project-context'
 import { CreateProjectDialog } from '@/components/create-project-dialog'
+import { EditProjectDialog } from '@/components/edit-project-dialog'
+import { DeleteProjectDialog } from '@/components/delete-project-dialog'
+import { ConfigureProjectDialog } from '@/components/configure-project-dialog'
 import { Button } from '@/components/ui/button'
-import { Plus, FolderOpen } from 'lucide-react'
+import { Plus, FolderOpen, MoreVertical, Edit, Trash2, Settings } from 'lucide-react'
 
 export function ProjectSelector() {
   const { projects, selectedProject, selectProject, loading } = useProject()
@@ -80,15 +91,50 @@ export function ProjectSelector() {
 
       {selectedProject && (
         <div className="p-3 bg-muted rounded-lg">
-          <h4 className="font-medium">{selectedProject.name}</h4>
-          {selectedProject.description && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {selectedProject.description}
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground mt-2">
-            Created {new Date(selectedProject.created_at).toLocaleDateString()}
-          </p>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h4 className="font-medium">{selectedProject.name}</h4>
+              {selectedProject.description && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {selectedProject.description}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground mt-2">
+                Created {new Date(selectedProject.created_at).toLocaleDateString()}
+              </p>
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Project Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <EditProjectDialog project={selectedProject}>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Name
+                  </DropdownMenuItem>
+                </EditProjectDialog>
+                <ConfigureProjectDialog project={selectedProject}>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Configure
+                  </DropdownMenuItem>
+                </ConfigureProjectDialog>
+                <DropdownMenuSeparator />
+                <DeleteProjectDialog project={selectedProject}>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DeleteProjectDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       )}
     </div>
