@@ -55,6 +55,35 @@ type UseSupabaseUploadOptions = {
 
 type UseSupabaseUploadReturn = ReturnType<typeof useSupabaseUpload>
 
+/**
+ * Sanitize filename for Supabase Storage compatibility
+ * Removes or replaces characters that cause issues with storage keys
+ */
+function sanitizeFilename(filename: string): string {
+  // Get file extension
+  const lastDotIndex = filename.lastIndexOf('.')
+  const name = lastDotIndex !== -1 ? filename.slice(0, lastDotIndex) : filename
+  const extension = lastDotIndex !== -1 ? filename.slice(lastDotIndex) : ''
+  
+  // Replace non-ASCII characters and special characters with safe alternatives
+  const sanitizedName = name
+    // Replace spaces with underscores
+    .replace(/\s+/g, '_')
+    // Remove or replace non-ASCII characters (Korean, Chinese, etc.)
+    .replace(/[^\x00-\x7F]/g, '')
+    // Remove special characters that might cause issues
+    .replace(/[<>:"/\\|?*]/g, '')
+    // Replace multiple underscores with single underscore
+    .replace(/_+/g, '_')
+    // Remove leading/trailing underscores
+    .replace(/^_+|_+$/g, '')
+  
+  // If the name becomes empty after sanitization, use a fallback
+  const finalName = sanitizedName || 'file'
+  
+  return finalName + extension
+}
+
 const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
   const {
     bucketName,
@@ -129,9 +158,11 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
     const responses = await Promise.all(
       filesToUpload.map(async (file) => {
-        const filePath = !!path ? `${path}/${file.name}` : file.name
+        // Sanitize filename for storage compatibility
+        const sanitizedFilename = sanitizeFilename(file.name)
+        const filePath = !!path ? `${path}/${sanitizedFilename}` : sanitizedFilename
         
-        // Upload file to storage
+        // Upload file to storage using sanitized filename
         const { error: uploadError } = await supabase.storage
           .from(bucketName)
           .upload(filePath, file, {
@@ -147,8 +178,8 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
         if (path) {
           const fileData: ProjectFileInsert = {
             project_id: path,
-            file_name: file.name,
-            file_path: filePath,
+            file_name: file.name, // Keep original filename for display
+            file_path: filePath,  // Use sanitized path for storage reference
             file_size: file.size,
             mime_type: file.type,
           }
