@@ -1,141 +1,180 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@repo/ui/button";
-import { useAuth } from "@/contexts/auth-context";
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
+import { useProject } from '@/contexts/project-context'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ProjectSelector } from '@/components/project-selector'
+import { ProjectFiles } from '@/components/project-files'
+import { ProjectAnalytics } from '@/components/project-analytics'
+import { ProjectSettings } from '@/components/project-settings'
+import LogoutButton from '@/components/auth/logout-button'
+import { User, FolderOpen, Files, BarChart3, Settings, Info } from 'lucide-react'
 
-const API_HOST = process.env.NEXT_PUBLIC_API_HOST || "http://localhost:3001";
+export default function DashboardPage() {
+  const { user, loading } = useAuth()
+  const { selectedProject, projects } = useProject()
+  const router = useRouter()
 
-export default function Web() {
-  const [response, setResponse] = useState<{ message: string; timestamp: string } | null>(null);
-  const [error, setError] = useState<string | undefined>();
-  const [loading, setLoading] = useState<boolean>(false);
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-
-  const testApiCall = async () => {
-    setLoading(true);
-    setError(undefined);
-    
-    try {
-      const result = await fetch(`${API_HOST}/test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!result.ok) {
-        throw new Error(`HTTP error! status: ${result.status}`);
-      }
-      
-      const data = await result.json();
-      setResponse(data);
-    } catch (err) {
-      console.error(err);
-      setError("Unable to connect to API");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onReset = () => {
-    setResponse(null);
-    setError(undefined);
-  };
-
-  if (authLoading) {
+  if (loading) {
     return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <p>Loading...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
-    );
+    )
+  }
+
+  if (!user) {
+    router.push('/auth/login')
+    return null
   }
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
-        <h1>AI Application</h1>
-        <div>
-          {user ? (
-            <>
-              <span style={{ marginRight: "15px" }}>Welcome, {user.email}</span>
-              <Button onClick={() => router.push('/app')} style={{ marginRight: "10px" }}>
-                Dashboard
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button onClick={() => router.push('/auth/login')} style={{ marginRight: "10px" }}>
-                Sign In
-              </Button>
-              <Button onClick={() => router.push('/auth/signup')}>
-                Sign Up
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div style={{ marginBottom: "30px" }}>
-        <h2>API Connection Test</h2>
-        <p>Test the connection between Next.js (port 3000) and NestJS API (port 3001)</p>
-        
-        <div style={{ marginBottom: "20px" }}>
-          <Button 
-            onClick={testApiCall}
-            disabled={loading}
-            style={{ marginRight: "10px" }}
-          >
-            {loading ? "Testing..." : "Test API Connection"}
-          </Button>
-          
-          {response && (
-            <Button onClick={onReset}>Reset</Button>
-          )}
-        </div>
-
-        {error && (
-          <div style={{ 
-            padding: "10px", 
-            backgroundColor: "#ffebee", 
-            border: "1px solid #f44336", 
-            borderRadius: "4px",
-            marginBottom: "20px"
-          }}>
-            <h3 style={{ color: "#f44336", margin: "0 0 10px 0" }}>Error</h3>
-            <p style={{ margin: "0", color: "#f44336" }}>{error}</p>
-          </div>
-        )}
-        
-        {response && (
-          <div style={{ 
-            padding: "10px", 
-            backgroundColor: "#e8f5e8", 
-            border: "1px solid #4caf50", 
-            borderRadius: "4px" 
-          }}>
-            <h3 style={{ color: "#4caf50", margin: "0 0 10px 0" }}>Success!</h3>
-            <p style={{ margin: "5px 0", color: "#2e7d32" }}>
-              <strong>Message:</strong> {response.message}
-            </p>
-            <p style={{ margin: "5px 0", color: "#2e7d32" }}>
-              <strong>Timestamp:</strong> {response.timestamp}
+    <TooltipProvider>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground mt-2 flex items-center gap-2">
+              Manage your projects and files
+              {selectedProject && (
+                <>
+                  <span>•</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedProject.name}
+                  </Badge>
+                </>
+              )}
             </p>
           </div>
-        )}
-      </div>
-
-      {user && (
-        <div style={{ marginTop: "40px", padding: "20px", backgroundColor: "#f0f0f0", borderRadius: "8px" }}>
-          <h2>Authenticated Features</h2>
-          <p>You are signed in and can access protected features:</p>
-          <Button onClick={() => router.push('/dashboard')}>
-            Go to Dashboard
-          </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span>{user.email}</span>
+              <Badge variant={user.email_confirmed_at ? "default" : "secondary"} className="text-xs">
+                {user.email_confirmed_at ? "Verified" : "Unverified"}
+              </Badge>
+            </div>
+            <LogoutButton />
+          </div>
         </div>
-      )}
-    </div>
-  );
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Column - Project Selection */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Project Statistics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FolderOpen className="h-5 w-5" />
+                  Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Projects</span>
+                    <Badge variant="outline" className="text-sm font-medium">
+                      {projects.length}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Active Project</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-sm font-medium truncate max-w-[100px]">
+                          {selectedProject ? selectedProject.name : 'None selected'}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {selectedProject ? selectedProject.name : 'No project selected'}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Member since</span>
+                    <span className="text-sm font-medium">
+                      {new Date(user.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Separator />
+
+            {/* Project Selector */}
+            <ProjectSelector />
+          </div>
+
+          {/* Right Column - Tabbed Content */}
+          <div className="lg:col-span-3">
+            {selectedProject ? (
+              <Tabs defaultValue="files" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="files" className="flex items-center gap-2">
+                    <Files className="h-4 w-4" />
+                    Files
+                  </TabsTrigger>
+                  <TabsTrigger value="analytics" className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Analytics
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="files" className="space-y-6 mt-6">
+                  <ProjectFiles />
+                </TabsContent>
+                
+                <TabsContent value="analytics" className="space-y-6 mt-6">
+                  <ProjectAnalytics />
+                </TabsContent>
+                
+                <TabsContent value="settings" className="space-y-6 mt-6">
+                  <ProjectSettings />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="h-5 w-5" />
+                    Welcome to Your Dashboard
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <FolderOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-lg font-medium mb-2">No Project Selected</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Select or create a project to start managing your files and content.
+                    </p>
+                    <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                      <p>• Upload and organize your files</p>
+                      <p>• Extract and edit text content</p>
+                      <p>• Generate scenes and images</p>
+                      <p>• Configure AI models and prompts</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </TooltipProvider>
+  )
 }

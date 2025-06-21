@@ -43,7 +43,7 @@ export default function SignupForm() {
       } else if (data.user && !data.user.email_confirmed_at) {
         setMessage('Please check your email for a confirmation link.')
       } else {
-        router.push('/dashboard')
+        router.push('/')
         router.refresh()
       }
     } catch (err) {
