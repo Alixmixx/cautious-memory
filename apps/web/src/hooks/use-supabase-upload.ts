@@ -1,17 +1,11 @@
 import { createClient } from '@/lib/supabase/client'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type FileError, type FileRejection, useDropzone } from 'react-dropzone'
+import { Database } from '@repo/database-types'
 
 const supabase = createClient()
 
-interface ProjectFile {
-  project_id: string
-  file_name: string
-  file_path: string
-  file_size: number
-  mime_type: string
-  text_content?: string | null
-}
+type ProjectFileInsert = Database['public']['Tables']['project_files']['Insert']
 
 interface FileWithPreview extends File {
   preview?: string
@@ -151,19 +145,23 @@ const useSupabaseUpload = (options: UseSupabaseUploadOptions) => {
 
         // Save file metadata to project_files table if path (project_id) is provided
         if (path) {
+          const fileData: ProjectFileInsert = {
+            project_id: path,
+            file_name: file.name,
+            file_path: filePath,
+            file_size: file.size,
+            mime_type: file.type,
+          }
+
           const { error: dbError } = await supabase
             .from('project_files')
-            .insert({
-              project_id: path,
-              file_name: file.name,
-              file_path: filePath,
-              file_size: file.size,
-              mime_type: file.type,
-            })
+            .insert(fileData)
 
           if (dbError) {
             console.error('Failed to save file metadata:', dbError)
-            // Don't fail the upload if metadata save fails, just log it
+            console.error('File details:', fileData)
+            // Return error to fail the upload if metadata save fails
+            return { name: file.name, message: `Database error: ${dbError.message}` }
           }
         }
 

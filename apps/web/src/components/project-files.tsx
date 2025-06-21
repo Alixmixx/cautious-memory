@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useProject } from '@/contexts/project-context'
+import { Database } from '@repo/database-types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -15,17 +16,7 @@ import { EditFileTextDialog } from '@/components/edit-file-text-dialog'
 import { useToast } from '@/hooks/use-toast'
 import { Download, MoreHorizontal, Trash2, Upload, FileText, Image, Video, Music, Archive, File, Edit, Wand2, ImageIcon, Sparkles } from 'lucide-react'
 
-interface ProjectFile {
-  id: string
-  project_id: string
-  file_name: string
-  file_path: string
-  file_size: number
-  mime_type: string
-  text_content?: string | null
-  processed_at?: string | null
-  uploaded_at: string
-}
+type ProjectFile = Database['public']['Tables']['project_files']['Row']
 
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return '0 Bytes'
@@ -93,7 +84,11 @@ export function ProjectFiles() {
         .eq('project_id', selectedProject.id)
         .order('uploaded_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Failed to fetch project files:', error)
+        console.error('Project ID:', selectedProject.id)
+        throw error
+      }
       setFiles(data || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load files')
@@ -133,7 +128,11 @@ export function ProjectFiles() {
         .from('project-files')
         .remove([file.file_path])
 
-      if (storageError) throw storageError
+      if (storageError) {
+        console.error('Failed to delete file from storage:', storageError)
+        console.error('File path:', file.file_path)
+        throw storageError
+      }
 
       // Delete from database
       const { error: dbError } = await supabase
@@ -141,7 +140,11 @@ export function ProjectFiles() {
         .delete()
         .eq('id', file.id)
 
-      if (dbError) throw dbError
+      if (dbError) {
+        console.error('Failed to delete file from database:', dbError)
+        console.error('File ID:', file.id)
+        throw dbError
+      }
 
       // Refresh files list
       await fetchFiles()

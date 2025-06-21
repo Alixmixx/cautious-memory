@@ -28,9 +28,13 @@ import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Edit, FileText, Loader2 } from 'lucide-react'
+import { sanitizeTextContent, FILE_SIZE_LIMITS } from '@/lib/validation'
 
 const editFileTextSchema = z.object({
-  text_content: z.string().min(1, 'Text content cannot be empty'),
+  text_content: z.string()
+    .min(1, 'Text content cannot be empty')
+    .max(FILE_SIZE_LIMITS.MAX_TEXT_CONTENT_LENGTH, `Text content cannot exceed ${Math.round(FILE_SIZE_LIMITS.MAX_TEXT_CONTENT_LENGTH / 1024)}KB`)
+    .transform((val) => sanitizeTextContent(val)),
 })
 
 type EditFileTextFormData = z.infer<typeof editFileTextSchema>
@@ -97,7 +101,15 @@ export function EditFileTextDialog({ file, onUpdate, children }: EditFileTextDia
         })
         .eq('id', file.id)
 
-      if (error) throw error
+      if (error) {
+        console.error('Failed to update file text content:', error)
+        console.error('File details:', {
+          file_id: file.id,
+          file_name: file.file_name,
+          text_content_length: data.text_content.length,
+        })
+        throw error
+      }
       
       toast({
         title: 'Text updated',

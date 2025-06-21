@@ -3,35 +3,11 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/auth-context'
+import { Database } from '@repo/database-types'
 
-interface Project {
-  id: string
-  name: string
-  description?: string | null
-  user_id: string
-  llm_model?: string | null
-  default_prompt?: string | null
-  tool_schema?: object | null
-  created_at: string
-  updated_at: string
-}
-
-interface ProjectInsert {
-  name: string
-  description?: string | null
-  user_id?: string
-  llm_model?: string | null
-  default_prompt?: string | null
-  tool_schema?: object | null
-}
-
-interface ProjectUpdate {
-  name?: string
-  description?: string | null
-  llm_model?: string | null
-  default_prompt?: string | null
-  tool_schema?: object | null
-}
+type Project = Database['public']['Tables']['projects']['Row']
+type ProjectInsert = Database['public']['Tables']['projects']['Insert']
+type ProjectUpdate = Database['public']['Tables']['projects']['Update']
 
 interface ProjectContextType {
   projects: Project[]
@@ -69,7 +45,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Failed to fetch projects:', error)
+        console.error('User ID:', user.id)
+        throw error
+      }
 
       setProjects(data || [])
       
@@ -102,7 +82,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Failed to create project:', error)
+      console.error('Project data:', { ...projectData, user_id: user.id })
+      throw error
+    }
 
     const newProject = data as Project
     setProjects(prev => [newProject, ...prev])
@@ -124,7 +108,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Failed to update project:', error)
+      console.error('Update data:', { projectId, updates, user_id: user.id })
+      throw error
+    }
 
     const updatedProject = data as Project
     
@@ -150,7 +138,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       .eq('id', projectId)
       .eq('user_id', user.id)
 
-    if (error) throw error
+    if (error) {
+      console.error('Failed to delete project:', error)
+      console.error('Delete data:', { projectId, user_id: user.id })
+      throw error
+    }
 
     // Remove from projects list
     setProjects(prev => prev.filter(p => p.id !== projectId))
